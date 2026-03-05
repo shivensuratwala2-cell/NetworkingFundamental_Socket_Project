@@ -24,7 +24,7 @@ has_key = False
 
 def get_map_string():
     """Renders the 10x10 escape room layout"""
-    display_size = 10
+    display_size = 3
     grid = [[" . " for _ in range(display_size)] for _ in range(display_size)]
     for p in players:
         px, py = p["pos"][0] % display_size, p["pos"][1] % display_size
