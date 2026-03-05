@@ -16,7 +16,7 @@ def show_welcome_screen():
     print("          Networking Fundamentals Project")
     print("="*50)
     print("\nOVERVIEW:")
-    print("This is a 4-player turn-based co-op game built using")
+    print("This is a 3-player turn-based co-op game built using")
     print("Python Socket Programming. If players are missing,")
     print("the server will automatically assign AI Bots.")
     
