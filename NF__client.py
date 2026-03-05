@@ -4,93 +4,48 @@ import os
 SERVER_IP = '172.16.17.147' # Replace with actual IP
 PORT = 1234
 
-
-
-
 def show_welcome_screen():
-    # Clear terminal for a professional look
     os.system('cls' if os.name == 'nt' else 'clear')
-    
     print("="*50)
     print("       WELCOME TO THE TERMINAL ESCAPE ROOM")
-    print("          Networking Fundamentals Project")
     print("="*50)
-    print("\nOVERVIEW:")
-    print("This is a 3-player turn-based co-op game built using")
-    print("Python Socket Programming. If players are missing,")
-    print("the server will automatically assign AI Bots.")
-    
-    print("\nHOW TO PLAY & CONTROLS:")
-    print("-" * 30)
-    print("  W : Move Up (North)")
-    print("  A : Move Left (West)")
-    print("  S : Move Down (South)")
-    print("  D : Move Right (East)")
-    print("  CHAT:message : Talk to your teammates")
-    print("-" * 30)
+    print("\nCONTROLS:")
+    print("  W/A/S/D : Move around the 100x100 grid")
+    print("  CHAT:msg : Talk to your group")
     print("\nRULES:")
-    print("1. Commands only work when it is YOUR turn.")
-    print("2. Coordinate with your team via chat to 'escape'!")
+    print("1. Find the hidden Key first.")
+    print("2. Navigate to the Door (D) to escape.")
+    print("3. You can only move on 'YOUR TURN'.")
     print("="*50)
-    input("\nPress ENTER to join the game server...")
+    input("\nPress ENTER to connect...")
 
-
-
-def receive_messages(client_socket):
+def receive_messages(sock):
     while True:
         try:
-            message = client_socket.recv(2048).decode('utf-8')
-            if not message: break
-            print(message)
+            data = sock.recv(4096).decode('utf-8')
+            if data:
+                print(data)
         except:
-            print("\n[CONNECTION LOST]")
+            print("\n[DISCONNECTED FROM SERVER]")
             break
 
 def start_client():
     show_welcome_screen()
-    
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print(f"[CONNECTING] Attempting to reach {SERVER_IP}...")
+    
     try:
         client.connect((SERVER_IP, PORT))
+        print("[SUCCESS] Connection established!")
     except Exception as e:
-        print(f"Error: Could not connect to {SERVER_IP}. {e}")
+        print(f"[FAILED] Connection error: {e}")
         return
 
-    # Start thread to receive live feedback while user types
     threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
 
     while True:
-        user_input = input()
-        client.send(user_input.encode('utf-8'))
+        cmd = input()
+        client.send(cmd.encode('utf-8'))
 
 if __name__ == "__main__":
     start_client()
-
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((SERVER_IP, PORT))
-
-def receive():
-    while True:
-        try:
-            print(client.recv(2048).decode('utf-8'))
-        except: break
-
-threading.Thread(target=receive, daemon=True).start()
-
-while True:
-    cmd = input()
-    client.send(cmd.encode('utf-8'))
-# ... (Keep the show_welcome_screen from previous step)
-
-def receive_thread(client_socket):
-    while True:
-        try:
-            # Receive layout, turn notifications, and chat
-            data = client_socket.recv(4096).decode('utf-8')
-            if data:
-                # Use a simple clear screen to keep the UI clean
-                print("\033[H\033[J", end="") 
-                print(data)
-        except:
-            break
-
