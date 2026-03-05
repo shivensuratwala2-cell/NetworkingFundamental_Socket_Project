@@ -4,6 +4,7 @@ import os
 SERVER_IP = '172.16.17.147' # Replace with actual IP
 PORT = 1234
 
+
 def show_welcome_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
     print("="*50)
