@@ -18,8 +18,8 @@ import random  # <--- CRITICAL: This fix resolves your NameError
 # Game State
 players = [] 
 current_turn = 0
-key_pos = [random.randint(0, 9), random.randint(0, 9)]
-door_pos = [random.randint(0, 9), random.randint(0, 9)]
+key_pos = [random.randint(0, 2), random.randint(0, 2)]
+door_pos = [random.randint(0, 2), random.randint(0, 2)]
 has_key = False
 
 def get_map_string():
