@@ -3,9 +3,9 @@ import threading
 import time
 
 # Core Settings
-HOST = '172.16.17.147'
+HOST = '172.16.27.157'
 PORT = 1234
-MAX_PLAYERS = 3
+MAX_PLAYERS = 2
 GRID_SIZE = 3
 
 
@@ -23,19 +23,28 @@ door_pos = [random.randint(0, 2), random.randint(0, 2)]
 has_key = False
 
 def get_map_string():
-    """Renders the 10x10 escape room layout"""
+    """Renders the 3x3 layout with VISIBLE markers for trial testing"""
     display_size = 3
     grid = [[" . " for _ in range(display_size)] for _ in range(display_size)]
+    
+    # 1. MARK THE KEY (Trial Basis)
+    if not has_key:
+        grid[key_pos[1]][key_pos[0]] = " K " # 'K' for Key
+    
+    # 2. MARK THE DOOR (Trial Basis)
+    grid[door_pos[1]][door_pos[0]] = " D " # 'D' for Door
+    
+    # 3. PLACE PLAYERS (Will overlap markers if on same spot)
     for p in players:
         px, py = p["pos"][0] % display_size, p["pos"][1] % display_size
         grid[py][px] = f"[{p['name'][0].upper()}]"
-    
-    if has_key: grid[door_pos[1]][door_pos[0]] = " D "
         
-    map_render = "\n--- ESCAPE ROOM LAYOUT ---\n"
+    map_render = "\n--- TRIAL MODE: ESCAPE ROOM LAYOUT ---\n"
     for row in grid:
         map_render += "".join(row) + "\n"
-    map_render += "STATUS: " + ("Key found! Go to Door (D)" if has_key else "Find the Key!")
+    
+    map_render += "DEBUG: Key at " + str(key_pos) + " | Door at " + str(door_pos) + "\n"
+    map_render += "STATUS: " + ("Key found! Go to Door (D)" if has_key else "Go to Key (K)!")
     return map_render
 
 def broadcast(msg):

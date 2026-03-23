@@ -1,7 +1,7 @@
 import socket
 import threading
 import os
-SERVER_IP = '172.16.17.147' # Replace with actual IP
+SERVER_IP = '172.16.27.157' # Replace with actual IP
 PORT = 1234
 
 
