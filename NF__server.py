@@ -5,8 +5,8 @@ import time
 # Core Settings
 HOST = '172.16.27.157'
 PORT = 1234
-MAX_PLAYERS = 2
-GRID_SIZE = 3
+MAX_PLAYERS = 3
+GRID_SIZE = 10
 
 
 
