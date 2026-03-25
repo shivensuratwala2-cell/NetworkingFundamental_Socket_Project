@@ -17,7 +17,7 @@ def play_background_music():
         import os
         # This line dynamically finds the folder where the script is RUNNING
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        music_file = os.path.join(base_dir, "music.wav")
+        music_file = os.path.join(base_dir, "music")
         
         if os.path.exists(music_file):
             # SND_FILENAME + SND_ASYNC ensures background playback on any Windows PC
