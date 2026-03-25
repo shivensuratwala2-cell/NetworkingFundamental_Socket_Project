@@ -1,125 +1,133 @@
 import socket
 import threading
 import time
+import random
 
-# Core Settings
-HOST = '172.16.27.157'
+# --- SETTINGS ---
+HOST = '0.0.0.0' 
 PORT = 1234
-MAX_PLAYERS = 3
-GRID_SIZE = 10
+MAX_PLAYERS = 0 
+GRID_SIZE = 10 
 
-
-
-import random  # <--- CRITICAL: This fix resolves your NameError
-
-
-
-
-# Game State
+# --- GAME STATE ---
 players = [] 
 current_turn = 0
-key_pos = [random.randint(0, 2), random.randint(0, 2)]
-door_pos = [random.randint(0, 2), random.randint(0, 2)]
+key_pos = [random.randint(0, 9), random.randint(0, 9)]
+door_pos = [random.randint(0, 9), random.randint(0, 9)]
 has_key = False
+start_time = None
+game_active = True
 
 def get_map_string():
-    """Renders the 3x3 layout with VISIBLE markers for trial testing"""
-    display_size = 3
-    grid = [[" . " for _ in range(display_size)] for _ in range(display_size)]
-    
-    # 1. MARK THE KEY (Trial Basis)
-    if not has_key:
-        grid[key_pos[1]][key_pos[0]] = " K " # 'K' for Key
-    
-    # 2. MARK THE DOOR (Trial Basis)
-    grid[door_pos[1]][door_pos[0]] = " D " # 'D' for Door
-    
-    # 3. PLACE PLAYERS (Will overlap markers if on same spot)
-    for p in players:
-        px, py = p["pos"][0] % display_size, p["pos"][1] % display_size
-        grid[py][px] = f"[{p['name'][0].upper()}]"
-        
-    map_render = "\n--- TRIAL MODE: ESCAPE ROOM LAYOUT ---\n"
-    for row in grid:
-        map_render += "".join(row) + "\n"
-    
-    map_render += "DEBUG: Key at " + str(key_pos) + " | Door at " + str(door_pos) + "\n"
-    map_render += "STATUS: " + ("Key found! Go to Door (D)" if has_key else "Go to Key (K)!")
-    return map_render
+    """Renders a pixel-perfect aligned terminal UI"""
+    elapsed = int(time.time() - start_time) if start_time else 0
+    mins, secs = divmod(elapsed, 60)
+    time_str = f"{mins:02d}:{secs:02d}"
 
+    # Initialize grid with 3-character wide dots
+    grid = [[" . " for _ in range(10)] for _ in range(10)]
+    
+    # K and D must be 3 characters wide (" K " / " D ") to maintain alignment
+    if not has_key:
+        grid[key_pos[1]][key_pos[0]] = " K "
+    else:
+        grid[door_pos[1]][door_pos[0]] = " D "
+
+    for p in players:
+        px, py = p["pos"][0] % 10, p["pos"][1] % 10
+        grid[py][px] = f"[{p['name'][0].upper()}]"
+
+    # --- UI CONSTRUCTION (FIXED ALIGNMENT) ---
+    # content_width is 30 (10 columns * 3 chars) + 2 spaces = 32
+    border_top    = "╔" + "═" * 32 + "╗"
+    border_mid    = "╠" + "═" * 32 + "╣"
+    border_bottom = "╚" + "═" * 32 + "╝"
+    
+    # Centering the time header
+    header_text = f"║ {f'ESCAPE ROOM | TIME: {time_str}':^30} ║\n"
+    
+    map_body = ""
+    for row in grid:
+        map_body += "║ " + "".join(row) + " ║\n"
+    
+    # FIXED: The Mission Status is now perfectly centered within 30 characters
+    status_msg = "MISSION: SECURE EXIT (D)" if has_key else "MISSION: LOCATE DATA KEY (K)"
+    footer_text = f"║ {status_msg:^30} ║\n"
+    
+    return f"\n{border_top}\n{header_text}{border_mid}\n{map_body}{border_mid}\n{footer_text}{border_bottom}\n"
 def broadcast(msg):
-    """Sends messages to all connected clients"""
     for p in players:
         try: p["conn"].send(msg.encode('utf-8'))
         except: pass
 
 def broadcast_turn_status():
-    """Identifies the active player and updates the screen"""
     global current_turn
     layout = get_map_string()
     active_name = players[current_turn]["name"]
     for i, p in enumerate(players):
         try:
-            p["conn"].send("\033[H\033[J".encode('utf-8')) # Clear screen command
+            p["conn"].send("\033[H\033[J".encode('utf-8')) 
             p["conn"].send(layout.encode('utf-8'))
             if i == current_turn:
-                p["conn"].send(f"\n*** YOUR TURN, {p['name'].upper()}! (w/a/s/d or chat:msg) ***\n".encode('utf-8'))
+                p["conn"].send(f"\n>>> ACCESS GRANTED: YOUR TURN, {p['name'].upper()}! <<<\n".encode('utf-8'))
             else:
-                p["conn"].send(f"\nWaiting for {active_name} to move...\n".encode('utf-8'))
+                p["conn"].send(f"\nWaiting for {active_name} to authorize movement...\n".encode('utf-8'))
         except: pass
 
 def handle_client(conn, addr, index):
-    global current_turn, has_key
-    print(f"[STATUS] Player {index+1} connected from {addr}")
-    
+    global current_turn, has_key, start_time, game_active, MAX_PLAYERS
     try:
-        conn.send("WELCOME! Enter Name: ".encode('utf-8'))
-        name = conn.recv(1024).decode('utf-8').strip()
-        players.append({"conn": conn, "name": name, "pos": [index*2, index*2]})
+        if index == 0:
+            conn.send("SYSTEM_ADMIN: Set Total Authorized Agents (1-4): ".encode('utf-8'))
+            choice = conn.recv(1024).decode().strip()
+            MAX_PLAYERS = int(choice) if choice in ['1','2', '3', '4'] else 3
+
+        conn.send("INPUT AGENT CREDENTIALS (Name): ".encode('utf-8'))
+        name = conn.recv(1024).decode().strip()
+        players.append({"conn": conn, "name": name, "pos": [random.randint(0,2), random.randint(0,2)]})
         
         while len(players) < MAX_PLAYERS:
-            conn.send(f"Waiting for {MAX_PLAYERS - len(players)} more members...".encode('utf-8'))
+            conn.send(f"\n[SCANNING] Waiting for {MAX_PLAYERS - len(players)} more agents...".encode('utf-8'))
             time.sleep(2)
 
+        if not start_time: start_time = time.time()
         broadcast_turn_status()
 
-        while True:
-            msg = conn.recv(1024).decode('utf-8').strip().lower()
+        while game_active:
+            msg = conn.recv(1024).decode().strip().lower()
+            if not msg: break
+            
             if current_turn == index:
-                if msg in ['w', 'a', 's', 'd']:
-                    p_pos = players[index]["pos"]
-                    if msg == 'w': p_pos[1] = (p_pos[1] - 1) % GRID_SIZE
-                    if msg == 's': p_pos[1] = (p_pos[1] + 1) % GRID_SIZE
-                    if msg == 'a': p_pos[0] = (p_pos[0] - 1) % GRID_SIZE
-                    if msg == 'd': p_pos[0] = (p_pos[0] + 1) % GRID_SIZE
-                    
-                    if p_pos == key_pos and not has_key:
-                        has_key = True
-                        broadcast("\n!!! SYSTEM: KEY FOUND !!!\n")
-                    
-                    if p_pos == door_pos and has_key:
-                        broadcast("\nVICTORY! YOU ESCAPED THE ROOM!\n")
-                        break
-
-                    current_turn = (current_turn + 1) % MAX_PLAYERS
-                    broadcast_turn_status()
-                elif msg.startswith("chat:"):
-                    broadcast(f"CHAT [{name}]: {msg[5:]}")
+                pos = players[index]["pos"]
+                if msg == 'w': pos[1] = (pos[1]-1)%10
+                elif msg == 's': pos[1] = (pos[1]+1)%10
+                elif msg == 'a': pos[0] = (pos[0]-1)%10
+                elif msg == 'd': pos[0] = (pos[0]+1)%10
+                
+                if pos == key_pos and not has_key:
+                    has_key = True
+                    broadcast("\n[ALERT] DATA KEY SECURED BY AGENT " + name.upper() + "\n")
+                
+                if pos == door_pos and has_key:
+                    final_elapsed = int(time.time() - start_time)
+                    broadcast(f"\n⚡ MISSION SUCCESS! PROTOCOL COMPLETE IN {final_elapsed}s! ⚡\n")
+                    game_active = False
+                    time.sleep(5) 
+                    break
+                
+                current_turn = (current_turn + 1) % MAX_PLAYERS
+                broadcast_turn_status()
     except: pass
     finally: conn.close()
 
-# Start Server
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    server.bind((HOST, PORT))
-    server.listen(MAX_PLAYERS)
-    print(f"[SERVER ONLINE] Listening on {HOST}:{PORT}")
-except Exception as e:
-    print(f"[ERROR] Binding failed: {e}")
-    exit()
+server.bind((HOST, PORT))
+server.listen(4)
+print(f"Final Aesthetic Server online on {PORT}")
 
 conn_count = 0
-while conn_count < MAX_PLAYERS:
+while True:
     c, addr = server.accept()
     threading.Thread(target=handle_client, args=(c, addr, conn_count)).start()
     conn_count += 1
+    if MAX_PLAYERS > 0 and conn_count >= MAX_PLAYERS: break
