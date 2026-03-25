@@ -12,23 +12,22 @@ CYAN = ""
 GOLD = ""
 RESET = ""
 def play_background_music():
-    """Final Force-Path Fix for Shivan's Snake Game"""
+    """Portable path logic: Works on any PC after downloading from GitHub"""
     try:
         import os
-        # Using a raw string (r"") to prevent escape character errors
-        music_file = r"C:\Users\shive\snake_game\music.wav"
+        # This line dynamically finds the folder where the script is RUNNING
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        music_file = os.path.join(base_dir, "music.wav")
         
         if os.path.exists(music_file):
-            # SND_FILENAME tells Windows to look at the string as a path
-            # SND_ASYNC allows the code below (SYSTEM_ADMIN) to run immediately
+            # SND_FILENAME + SND_ASYNC ensures background playback on any Windows PC
             winsound.PlaySound(music_file, winsound.SND_FILENAME | winsound.SND_LOOP | winsound.SND_ASYNC)
-            print(f"[AUDIO] SUCCESS: Playing mission audio from {music_file}")
+            print(f"[AUDIO] Protocol Initialized: Playing {os.path.basename(music_file)}")
         else:
-            print(f"[AUDIO ERROR] File missing at: {music_file}")
-            # This helps debug if the extension is actually music.wav.wav
-            print(f"Directory Content: {os.listdir(r'C:\Users\shive\snake_game')}")
+            print(f"\n[AUDIO ERROR] music.wav not found in project folder!")
+            print(f"Target Path: {music_file}")
     except Exception as e:
-        print(f"[AUDIO ERROR] System Failure: {e}")
+        print(f"[AUDIO ERROR] Hardware/Path Failure: {e}")
 
 def show_welcome_screen():
     """Displays a stylized monochrome entry screen with clear rules"""
