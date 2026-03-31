@@ -29,9 +29,9 @@ def get_map_string():
     
     # K and D must be 3 characters wide (" K " / " D ") to maintain alignment
     if not has_key:
-        grid[key_pos[1]][key_pos[0]] = " K "
+        grid[key_pos[1]][key_pos[0]] = " . "
     else:
-        grid[door_pos[1]][door_pos[0]] = " D "
+        grid[door_pos[1]][door_pos[0]] = " . "
 
     for p in players:
         px, py = p["pos"][0] % 10, p["pos"][1] % 10

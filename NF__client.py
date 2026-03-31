@@ -1,40 +1,22 @@
 import socket
 import threading
 import os
-import winsound
 
 # --- CONFIGURATION ---
-SERVER_IP = '192.168.2.104' 
+SERVER_IP = '192.168.1.41' 
 PORT = 1234
 
-# --- AESTHETIC CONSTANTS RESTORED ---
+# --- AESTHETIC CONSTANTS ---
+# Kept as empty strings for the monochrome look you requested
 CYAN = ""
 GOLD = ""
 RESET = ""
-def play_background_music():
-    """Portable path logic: Works on any PC after downloading from GitHub"""
-    try:
-        import os
-        # This line dynamically finds the folder where the script is RUNNING
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        music_file = os.path.join(base_dir, "music")
-        
-        if os.path.exists(music_file):
-            # SND_FILENAME + SND_ASYNC ensures background playback on any Windows PC
-            winsound.PlaySound(music_file, winsound.SND_FILENAME | winsound.SND_LOOP | winsound.SND_ASYNC)
-            print(f"[AUDIO] Protocol Initialized: Playing {os.path.basename(music_file)}")
-        else:
-            print(f"\n[AUDIO ERROR] music.wav not found in project folder!")
-            print(f"Target Path: {music_file}")
-    except Exception as e:
-        print(f"[AUDIO ERROR] Hardware/Path Failure: {e}")
 
 def show_welcome_screen():
     """Displays a stylized monochrome entry screen with clear rules"""
-    import os
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    # ASCII Art Title for better visual impact
+    # ASCII Art Title for visual impact
     title_art = r"""
     ############################################################
     #     _____   _____   _____   _____   _____   _____        #
@@ -71,12 +53,13 @@ def show_welcome_screen():
     input("\n >>> PRESS [ENTER] TO INITIALIZE NEURAL LINK... ")
 
 def receive_messages(sock):
+    """Handles incoming map updates and chat from the server"""
     while True:
         try:
             data = sock.recv(4096).decode('utf-8')
             if not data:
                 break
-            # Trigger refresh on aesthetic border update
+            # Trigger refresh (ANSI Clear) on aesthetic border update
             if "╔" in data or "⚡" in data:
                 print("\033[H\033[J", end="") 
             print(data)
@@ -84,17 +67,27 @@ def receive_messages(sock):
             break
 
 def start_client():
+    """Initializes the socket connection and threading"""
     show_welcome_screen()
-    play_background_music()
+    
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print(f"\n[CONNECTING] Pinging mission hub at {SERVER_IP}...")
+    
     try:
         client.connect((SERVER_IP, PORT))
+        print(f"[SUCCESS] Connection established!")
+        
+        # Start background thread for real-time updates
         threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
+        
         while True:
             user_input = input()
+            if user_input.lower() == 'exit':
+                break
             client.send(user_input.encode('utf-8'))
+            
     except Exception as e:
-        print(f"{GOLD}[FAILED] {e}{RESET}")
+        print(f"[FAILED] Could not reach the server: {e}")
 
 if __name__ == "__main__":
     start_client()
